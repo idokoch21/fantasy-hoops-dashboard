@@ -43,19 +43,35 @@ with tab2:
         # יצירת גרף ממופה עם תמונות (25 הראשונים)
         top_fa = df_fa.head(25)
         fig_scatter = px.scatter(top_fa, x="AST", y="PTS", text="Name", title="Top Waiver Wire Targets")
+        
+        # --- התיקון כאן ---
         for i, row in top_fa.iterrows():
             fig_scatter.add_layout_image(
-                dict(source=row["Img"], xref="x", yref="y", x=row["AST"], y=row["PTS"],
-                     sizex=1.5, sizey=1.5, xanchor="center", yanchor="middle", layer="above")
+                dict(
+                    source=row["Img"],
+                    xref="x", yref="y",
+                    x=row["AST"], y=row["PTS"],
+                    sizex=40, sizey=40, # גודל קבוע בפיקסלים
+                    xanchor="center", yanchor="middle",
+                    sizing="contain", 
+                    opacity=0.9,
+                    layer="above"
+                )
             )
-        fig_scatter.update_traces(marker=dict(size=0), textposition='top center')
+        
+        # הסתרת הנקודות המקוריות ועדכון הצירים כדי שיתאימו לתמונות
+        fig_scatter.update_traces(marker=dict(size=0), textposition='top center', textfont=dict(size=10))
+        fig_scatter.update_xaxes(showgrid=False, zeroline=False)
+        fig_scatter.update_yaxes(showgrid=False, zeroline=False)
+        fig_scatter.update_layout(height=600, template="plotly_white")
+        # -------------------
+
         st.plotly_chart(fig_scatter, use_container_width=True)
 
 with tab3:
     st.header("💡 Strategic Head-to-Head")
     mode = st.radio("Mode:", ["Automatic Recommendation", "Manual Comparison"], horizontal=True)
     
-    # 7 הקטגוריות של האסטרטגיה שלך
     relevant_cats = ["PTS", "REB", "AST", "STL", "3PM", "FG%", "FT%"]
 
     if mode == "Automatic Recommendation":
@@ -72,7 +88,6 @@ with tab3:
             name2 = st.selectbox("Add Player (Waiver Wire):", df_fa['Name'].tolist())
             p2 = df_fa[df_fa['Name'] == name2].iloc[0]
 
-    # תצוגה ויזואלית
     st.divider()
     img_c1, img_c2, img_c3 = st.columns([1, 0.5, 1])
     with img_c1:
@@ -86,7 +101,6 @@ with tab3:
         st.subheader(f"ADD: {p2['Name']}")
         st.caption(f"Potential Value Score: {round(p2[relevant_cats].sum(), 1)}")
 
-    # בניית טבלת השוואה מלאה (7 עמודות + דלתא + מנצח)
     comp_list = []
     up_count = 0
     for cat in relevant_cats:
@@ -95,8 +109,8 @@ with tab3:
         diff = round(v2 - v1, 2)
         
         if diff > 0:
-            up_count += 1
             status = "✅ Upgrade"
+            up_count += 1
         elif diff < 0:
             status = "❌ Downgrade"
         else:
@@ -112,7 +126,6 @@ with tab3:
     
     comp_df = pd.DataFrame(comp_list)
     
-    # הגדרת יישור לשמאל עבור טבלת ההשוואה
     h2h_config = {
         f"{p1['Name']}": st.column_config.TextColumn(p1['Name']),
         f"{p2['Name']}": st.column_config.TextColumn(p2['Name']),
@@ -122,8 +135,7 @@ with tab3:
     
     st.dataframe(comp_df, column_config=h2h_config, use_container_width=True, hide_index=True)
     
-    # סיכום סופי
     if up_count >= 4:
         st.success(f"🔥 Strategic Verdict: This move improves your team in **{up_count} out of 7** core categories!")
     else:
-        st.warning(f"⚠️ Caution: This move only improves **{up_count} out of 7** categories. Check if the losses in other stats are worth it.")
+        st.warning(f"⚠️ Caution: This move only improves **{up_count} out of 7** categories.")
